@@ -1,0 +1,33 @@
+#!/usr/bin/env ruby
+
+require "sass/makedepend"
+require "optparse"
+
+options = { syntax: :scss }
+
+opts = OptionParser.new do |opts|
+  opts.banner = "Usage: #{File.basename($0)} [options] file file..."
+
+  opts.on("--scss", "Use the SCSS syntax (true by default).") do
+    options[:syntax] = :scss
+  end
+
+  opts.on("--sass", "Use the SASS syntax.") do
+    options[:syntax] = :sass
+  end
+
+  opts.on("-I PATH", "Specify additional load paths.") do |path|
+    options[:load_paths] = path.split(File::PATH_SEPARATOR)
+  end
+end
+
+opts.parse!
+
+abort opts.help if ARGV.empty?
+
+rules = Dir[*ARGV].map do |file|
+  tree = Sass::Makedepend::Tree.new(Sass::Engine.for_file(file, options))
+  tree.to_makefile_rules
+end
+
+puts rules.flatten.uniq.join("\n\n")
